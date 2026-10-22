@@ -1,1 +1,13 @@
-PLACEHOLDER
+name: Disabled pending 0.1.17 republish
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  noop:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo 'Disabled pending corrected 0.1.17 publisher.'
