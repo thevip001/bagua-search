@@ -1,0 +1,44 @@
+name: Sync verified 0.1.17 baseline
+
+on:
+  push:
+    paths:
+      - '.github/workflows/sync-0.1.17-backup.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout verified 0.1.17 baseline
+        uses: actions/checkout@v4
+        with:
+          repository: thevip001/bagua-search-0.1.17-test
+          ref: 87934eac295963f7909b34e19c666de16cdac317
+          path: baseline-0.1.17
+
+      - name: Copy verified 0.1.17 userscript
+        run: |
+          mkdir -p versions
+          cp 'baseline-0.1.17/八卦搜索.user.js' 'versions/八卦搜索-0.1.17.user.js'
+          rm -rf baseline-0.1.17
+
+      - name: Commit backup
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add 'versions/八卦搜索-0.1.17.user.js'
+          if git diff --cached --quiet; then
+            echo 'No changes to commit'
+          else
+            git commit -m 'backup: archive verified userscript 0.1.17 from 87934ea'
+            git push
+          fi
