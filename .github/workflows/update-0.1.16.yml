@@ -1,0 +1,57 @@
+name: Publish userscript 0.1.16
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/update-0.1.16.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-bagua-search
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply verified 0.1.15 to 0.1.16 changes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import base64, hashlib, json, pathlib, zlib
+          p = pathlib.Path('八卦搜索.user.js')
+          raw = p.read_bytes()
+          old_sha = '4678dc5a629f55f549ea086a9a32fa5e2f28696dba83276f3c6b2f51b958b7c6'
+          new_sha = 'ff22808f7692753fa1b87700d6127893f971a27611e039460e1b51657a3c84a6'
+          current = hashlib.sha256(raw).hexdigest()
+          if current != new_sha:
+              assert current == old_sha, 'Source changed; refusing to overwrite'
+              text = raw.decode('utf-8')
+              dictionary = (text[135000:147000] + text[179000:198000]).encode()
+              packed = base64.b64decode('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')
+              decoder = zlib.decompressobj(-15, zdict=dictionary)
+              edits = json.loads(decoder.decompress(packed) + decoder.flush())
+              for start, stop, replacement in reversed(edits):
+                  assert 0 <= start <= stop <= len(text)
+                  text = text[:start] + replacement + text[stop:]
+              result = text.encode('utf-8')
+              assert hashlib.sha256(result).hexdigest() == new_sha, 'Output checksum mismatch'
+              p.write_bytes(result)
+          PY
+          node --check '八卦搜索.user.js'
+          git add -- '八卦搜索.user.js'
+          if ! git diff --cached --quiet; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m 'release: publish 八卦搜索 0.1.16'
+            git push origin HEAD:main
+          fi
