@@ -1,0 +1,45 @@
+name: Initialize userscript entry
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/initialize-script.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: initialize-userscript
+  cancel-in-progress: false
+
+jobs:
+  initialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Copy verified source without overwriting different files
+        shell: bash
+        run: |
+          set -euo pipefail
+          source='八卦搜索-0.1.15.user.js'
+          expected='f7b4858d351dc5a9e1a73cdc65802c64e6284a7d'
+          test "$(git hash-object -- "$source")" = "$expected"
+          mkdir -p versions
+          for target in '八卦搜索.user.js' 'versions/八卦搜索-0.1.15.user.js'; do
+            if test -e "$target"; then
+              cmp -- "$source" "$target" || { echo 'Refusing to overwrite different content'; exit 1; }
+            else
+              cp -- "$source" "$target"
+            fi
+            test "$(git hash-object -- "$target")" = "$expected"
+          done
+          git add -- '八卦搜索.user.js' 'versions/八卦搜索-0.1.15.user.js'
+          if ! git diff --cached --quiet; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m 'chore: archive v0.1.15 and create fixed userscript entry'
+            git push origin HEAD:main
+          fi
