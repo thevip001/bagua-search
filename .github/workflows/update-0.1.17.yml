@@ -1,4 +1,4 @@
-name: Disabled pending 0.1.17 republish
+name: Disabled pending corrected 0.1.17 republish
 
 on:
   workflow_dispatch:
