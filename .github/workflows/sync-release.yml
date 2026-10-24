@@ -5,6 +5,7 @@ on:
     paths:
       - 'versions/*.user.js'
       - 'docs/greasyfork.zh-CN.md'
+      - 'docs/images/*'
   workflow_dispatch:
 
 permissions:
@@ -25,9 +26,10 @@ jobs:
           cp "$latest" '八卦搜索.user.js'
           echo "Copied $latest to 八卦搜索.user.js"
 
-      - name: Copy Greasy Fork docs to README
+      - name: Prepare README with absolute image links
         run: |
-          cp 'docs/greasyfork.zh-CN.md' 'README.md'
+          sed -E 's#\((\./)?(docs/)?images/([^)]+)\)#(https://raw.githubusercontent.com/thevip001/bagua-search/main/docs/images/\3)#g' \
+            'docs/greasyfork.zh-CN.md' > 'README.md'
 
       - name: Commit changes
         run: |
