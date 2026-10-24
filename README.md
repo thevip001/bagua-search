@@ -2,6 +2,18 @@
 
 划词搜索、拖拽搜索和自定义快捷功能面板，将常用搜索网站与图片工具集中使用。
 
+## 功能预览
+
+![功能截图 1](https://raw.githubusercontent.com/thevip001/bagua-search/main/docs/images/1.png)
+
+![功能截图 2](https://raw.githubusercontent.com/thevip001/bagua-search/main/docs/images/2.png)
+
+![功能截图 3](https://raw.githubusercontent.com/thevip001/bagua-search/main/docs/images/3.png)
+
+![功能截图 4](https://raw.githubusercontent.com/thevip001/bagua-search/main/docs/images/4.png)
+
+![功能截图 5](https://raw.githubusercontent.com/thevip001/bagua-search/main/docs/images/5.png)
+
 ## 主要功能
 
 - 划词搜索：选择文字后，通过图标搜索框调用已配置的网站。
