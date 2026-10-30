@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         八卦搜索
 // @namespace    theMax24/bagua-search-public
-// @version      3.20
+// @version      3.21
 // @description  划词搜索、拖拽搜索盘、功能转轮盘、站内搜索、随手记与收藏夹、图片工具及本地配置备份。
 // @author       theMax24
 // @homepageURL  https://github.com/thevip001/bagua-search
@@ -811,7 +811,7 @@ if(tab==='engines'){p.classList.add('library-settings');
  const head=el('div',undefined,row);head.className='engine-head';head.append(grip,identity,actions);row.prepend(head);
  grip.ondragstart=event=>{moving=e.id;event.dataTransfer.setData('text/plain',e.id);event.dataTransfer.effectAllowed='move';row.classList.add('sorting');};grip.ondragend=()=>{moving=null;row.classList.remove('sorting');clear();};row.ondragover=event=>{const source=cfg.engines.find(x=>x.id===moving);if(!source||source.kind!==kind||source.id===e.id)return;event.preventDefault();event.dataTransfer.dropEffect='move';clear();const r=row.getBoundingClientRect();row.classList.add(event.clientY>r.top+r.height/2?'row-after':'row-before');};row.ondragleave=event=>{if(!row.contains(event.relatedTarget))row.classList.remove('row-before','row-after');};row.ondrop=event=>{event.preventDefault();event.stopPropagation();const r=row.getBoundingClientRect();if(reorderCategory(moving,e.id,event.clientY>r.top+r.height/2)){persist();moving=null;showSettings('engines');}clear();};
  }}
- 
+
 }
 
 if(tab==='box'){
