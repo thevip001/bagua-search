@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         八卦搜索
-// @namespace    theMax24/bagua-search-public
-// @version      3.26.2
+// @namespace    thevip001/bagua-search-public
+// @version      3.26.3
 // @description  划词搜索、拖拽搜索盘、功能转轮盘、站内搜索、随手记与收藏夹、图片工具及本地配置备份。
-// @author       theMax24
+// @author       thevip001
 // @homepageURL  https://github.com/thevip001/bagua-search
 // @license      AGPL-3.0-or-later
 // @match        http://*/*
