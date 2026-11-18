@@ -10,7 +10,7 @@
       <img src="https://raw.githubusercontent.com/thevip001/bagua-search/main/docs/images/1.png" alt="功能截图 1" width="360">
     </td>
     <td align="center">
-      <img src="https://raw.githubusercontent.com/thevip001/bagua-search/main/docs/images/2.png" alt="功能截图 2" width="360">
+      <img src="https://raw.githubusercontent.com/thevip001/bagua-search/main/docs/images/4.png" alt="功能截图 4" width="360">
     </td>
   </tr>
   <tr>
@@ -18,7 +18,7 @@
       <img src="https://raw.githubusercontent.com/thevip001/bagua-search/main/docs/images/3.png" alt="功能截图 3" width="360">
     </td>
     <td align="center">
-      <img src="https://raw.githubusercontent.com/thevip001/bagua-search/main/docs/images/4.png" alt="功能截图 4" width="360">
+      <img src="https://raw.githubusercontent.com/thevip001/bagua-search/main/docs/images/2.png" alt="功能截图 2" width="360">
     </td>
   </tr>
   <tr>
