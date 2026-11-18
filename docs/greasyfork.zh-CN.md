@@ -8,31 +8,25 @@
   <tr>
     <td align="center">
       <img src="https://raw.githubusercontent.com/thevip001/bagua-search/main/docs/images/1.png" alt="功能截图 1" width="360">
-      <br><b>划词搜索框</b>
     </td>
     <td align="center">
       <img src="https://raw.githubusercontent.com/thevip001/bagua-search/main/docs/images/2.png" alt="功能截图 2" width="360">
-      <br><b>拖拽搜索盘 (文字)</b>
     </td>
   </tr>
   <tr>
     <td align="center">
       <img src="https://raw.githubusercontent.com/thevip001/bagua-search/main/docs/images/3.png" alt="功能截图 3" width="360">
-      <br><b>功能转轮盘</b>
     </td>
     <td align="center">
       <img src="https://raw.githubusercontent.com/thevip001/bagua-search/main/docs/images/4.png" alt="功能截图 4" width="360">
-      <br><b>搜索引擎库管理</b>
     </td>
   </tr>
   <tr>
     <td align="center">
       <img src="https://raw.githubusercontent.com/thevip001/bagua-search/main/docs/images/5.png" alt="功能截图 5" width="360">
-      <br><b>自定义引擎配置</b>
     </td>
     <td align="center">
       <img src="https://raw.githubusercontent.com/thevip001/bagua-search/main/docs/images/6.png" alt="功能截图 6" width="360">
-      <br><b>功能合集配置</b>
     </td>
   </tr>
 </table>
