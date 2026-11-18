@@ -244,7 +244,7 @@ function normalizeProfile(c){
  for(const k of ['imageInner','imageOuter'])if(Array.isArray(c[k]))c[k]=c[k].map(x=>x==='compressImage'?'imageTools':x);
  return c;
 }
-function profileConfig(state,id=state.active){return {...structuredClone(DEFAULT),...structuredClone(state.common),...structuredClone(state.profiles[id]),provider011:true,provider013:true,provider014:true,provider015:true};}
+function profileConfig(state,id=state.active){return {...structuredClone(DEFAULT),...structuredClone(state.common),...structuredClone(state.profiles[id]),provider011:true,provider013:true,provider014:true,provider015:true,recordMode:'default'};}
 let profileState=get('profiles-v2',null);
 if(!profileState){
  put('pre-017-config-backup',structuredClone(cfg));const domestic=structuredClone(cfg);domestic.imageInner=[...DEFAULT.imageInner];domestic.imageOuter=[...DEFAULT.imageOuter];
@@ -374,7 +374,7 @@ const style=el('style',undefined,root);style.textContent=`*{box-sizing:border-bo
 
 .tool-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}.tool-column{display:flex;flex-direction:column;gap:4px;min-width:0}.tool-column label{display:flex;align-items:center;gap:4px;white-space:nowrap;margin:4px 0!important;font-size:13px}.tool-column input{flex:none}.record-top .record-copy-all{display:inline-block;margin:0}.record-save-bottom{display:block;margin:12px 0 0}.engine-sort-note{margin:0 0 8px;font-size:11px;line-height:1.5}.engine-library-intro{align-items:center;gap:7px}.engine-library-intro .muted{font-size:11px;line-height:1.45;flex:1;min-width:180px}
 `;
-let modal=null,toolbar=null,wheel=null,wheelInfo=null,drag=null,blocked=0,selectionPoint=null,timer,recordDir=null,imageDir=null,ocrWorker=null,ocrBusy=false;
+let modal=null,toolbar=null,wheel=null,wheelInfo=null,drag=null,blocked=0,selectionPoint=null,timer,ocrWorker=null,ocrBusy=false;
 
 const persist=()=>saveProfile();
 try{if(!get('inpanel-first-migrate-v5',false)){const seen={};for(const e of cfg.engines){const first=!(e.kind in seen);seen[e.kind]=true;e.inPanel=first;}put('inpanel-first-migrate-v5',true);saveProfile();}}catch(e){console.warn('[八卦搜索] 功能面板默认迁移失败',e);}
@@ -515,9 +515,7 @@ function showWheel(d,x,y){closeBox();closeWheel();const type=d.kind==='image'?'i
 function selectWheel(x,y){if(!wheelInfo)return null;const dx=(x-wheelInfo.left)/wheelInfo.scale-190,dy=(y-wheelInfo.top)/wheelInfo.scale-190,r=Math.hypot(dx,dy),ring=wheelRingAtRadius(r,cfg.wheelGap),i=direction(dx,dy);liftWheel(wheelInfo.cg,r<=25,190,190,true);let result=null;for(const p of wheelInfo.paths){const yes=p.ring===ring&&p.i===i;const pivot=polar(p.ring==='Inner'?70:147,-90+p.i*90);liftWheel(p.g,yes,pivot[0],pivot[1],false);if(yes)result=p.a;}return result;}
 function hint(text,x,y){let n=root.querySelector('.hint');if(!n){n=el('div',undefined,root);n.className='hint';}n.textContent=text;n.style.left=Math.max(6,Math.min(innerWidth-240,x+18))+'px';n.style.top=Math.max(6,Math.min(innerHeight-40,y+18))+'px';}const noHint=()=>root.querySelector('.hint')?.remove();
 function fileDB(mode,key,value){key='epoch-'+get('directoryEpoch',0)+':'+key;return new Promise((resolve,reject)=>{const req=indexedDB.open('baguaPublicHandlesV1',1);req.onupgradeneeded=()=>req.result.createObjectStore('handles');req.onerror=()=>reject(req.error);req.onsuccess=()=>{const db=req.result,tx=db.transaction('handles',mode),os=tx.objectStore('handles');let result;const r=mode==='readonly'?os.get(key):value===null?os.delete(key):os.put(value,key);r.onsuccess=()=>result=r.result;tx.oncomplete=()=>{db.close();resolve(result);};tx.onerror=()=>{db.close();reject(tx.error);};};});}
-let downloadDir=null,noteDir=null;
-try{recordDir=await fileDB('readonly','records');noteDir=await fileDB('readonly','notes');imageDir=await fileDB('readonly','images');downloadDir=await fileDB('readonly','downloads');}catch{}
-async function permission(h,ask=false){if(!h)return false;const o={mode:'readwrite'};return await h.queryPermission(o)==='granted'||ask&&await h.requestPermission(o)==='granted';}
+
 const pad=n=>String(n).padStart(2,'0');const monthKey=t=>{const d=new Date(t);return`${d.getFullYear()}-${pad(d.getMonth()+1)}`;};const hourKey=t=>{const d=new Date(t);return`${monthKey(t)}-${pad(d.getDate())} ${pad(d.getHours())}时`;};const dayKey=t=>hourKey(t).slice(0,10);
 
 const RECORD_SEPARATOR='\n\n────────────────────\n\n';
@@ -537,7 +535,7 @@ function assertBatchTxn(s){if(s.txn&&s.txn.kind!=='batch-file-v1')throw Error('�
 async function clearSavedBatch(s,assert){const ids=s.txn.ids;s.items=s.items.filter(x=>!ids.includes(x.id));s.txn=null;storeBuffer(s,assert);await fileDB('readwrite','batchFileHandle',null).catch(()=>{});}
 async function saveBatchInside(s,assert,allowRetry=false){
  assertBatchTxn(s);const items=unsavedRecords(s);if(!items.length){if(s.items.length){s.items=[];storeBuffer(s,assert);}return 0;}
- if(!s.txn){if(cfg.recordMode==='custom'&&!recordDir)throw Error('请点击“更改位置”重新确认自定义记录文件夹');s.txn={kind:'batch-file-v1',id:recordId(),ids:items.map(x=>x.id),name:batchFilename(items),target:recordDir?'custom':'default',state:'ready'};storeBuffer(s,assert);}
+ if(!s.txn){s.txn={kind:'batch-file-v1',id:recordId(),ids:items.map(x=>x.id),name:batchFilename(items),target:'default',state:'ready'};storeBuffer(s,assert);}
  const tx=s.txn,batch=tx.ids.map(id=>s.items.find(x=>x.id===id));if(batch.some(x=>!x))throw Error('批次内容不完整，请先备份记录');const body='\ufeff'+recordBatchText(batch),blob=new Blob([body],{type:'text/plain;charset=utf-8'});
  if(tx.target==='default'){
  if(tx.state==='downloading'&&!allowRetry)throw Error('上次下载结果未确认，请在“查看记录”检查并手动保存');
@@ -554,7 +552,7 @@ async function flushRecords(allowRetry=false){return withRecordLock(async assert
 
 function entryList(key){const rows=get(key,[]);if(!Array.isArray(rows))return[];return rows.filter(x=>x&&typeof x.id==='string'&&typeof x.text==='string'&&Number.isFinite(x.time)).sort((a,b)=>a.time-b.time);}
 function saveEntryList(key,rows){put(key,rows);}
-async function saveDailyFile(kind,day,entries){const base=kind==='records'?'记录':'随手记',name=base+day+'.txt',body='\ufeff'+entries.map(x=>recordStamp(x.time)+'\r\n'+String(x.text).replace(/\r?\n/g,'\r\n')).join('\r\n\r\n')+'\r\n',blob=new Blob([body],{type:'text/plain;charset=utf-8'});const dir=await targetDirectory(kind);if(dir){const h=await dir.getFileHandle(name,{create:true}),w=await h.createWritable();try{await w.write(blob);}finally{await w.close().catch(async()=>{await w.abort().catch(()=>{})});}return;}if(get('bagua-custom-dir-locked-'+kind))throw Error('自定义保存位置已锁定，请在设置中重新授权保存文件夹');const url=URL.createObjectURL(blob);try{await startNativeDownload(url,defaultSavePath(kind,name));}finally{setTimeout(()=>URL.revokeObjectURL(url),60000);}}
+async function saveDailyFile(kind,day,entries){const base=kind==='records'?'记录':'随手记',name=base+day+'.txt',body='\ufeff'+entries.map(x=>recordStamp(x.time)+'\r\n'+String(x.text).replace(/\r?\n/g,'\r\n')).join('\r\n\r\n')+'\r\n',blob=new Blob([body],{type:'text/plain;charset=utf-8'});const dir=await targetDirectory(kind);if(dir){const h=await dir.getFileHandle(name,{create:true}),w=await h.createWritable();try{await w.write(blob);}finally{await w.close().catch(async()=>{await w.abort().catch(()=>{})});}return;}const url=URL.createObjectURL(blob);try{await startNativeDownload(url,defaultSavePath(kind,name));}finally{setTimeout(()=>URL.revokeObjectURL(url),60000);}}
 
 const RECORD_FLUSH_INTERVAL=3*24*60*60*1000;
 const recordFlushTimers={};
@@ -597,16 +595,10 @@ function recordEntriesUI(kind){const isNote=kind==='notes',key=isNote?'note-entr
  const keys=Object.keys(days).sort().reverse().slice(0,3);if(!keys.length)el('p','暂无记录',list).className='muted';
  for(const day of keys){const box=el('details',undefined,list);box.open=day===dayStamp();el('summary',day.slice(0,4)+'-'+day.slice(4,6)+'-'+day.slice(6,8),box).className='record-day';const group=el('div',undefined,box);
   const draw=()=>{group.replaceChildren();for(const x of days[day]){const row=el('div',undefined,group);row.className='record-entry';const line=el('div',String(x.text).replace(/\s+/g,' ').trim(),row);line.className='content';line.style.cssText='white-space:nowrap;overflow:hidden;text-overflow:ellipsis';button(row,'展开',()=>{line.style.whiteSpace='pre-wrap';line.style.overflow='visible';line.textContent=x.text;});button(row,'编辑',()=>{const ta=el('textarea',undefined,row);ta.className='wide';ta.rows=3;ta.value=x.text;button(row,'保存修改',async()=>{x.text=ta.value;saveEntryList(key,rows);scheduleRecordFlush(kind);draw();toast('已修改，将在下次定时保存时写入');});});button(row,'删除',async()=>{const all=entryList(key).filter(y=>y.id!==x.id);saveEntryList(key,all);days[day]=days[day].filter(y=>y.id!==x.id);if(days[day].length)scheduleRecordFlush(kind);draw();toast('已删除，将在下次定时保存时写入');});}};draw();}
- if(!overrideFor(kind))el('p','未选择文件夹时，自动保存到浏览器下载目录／八卦搜索／'+SAVE_DIRS[kind]+'。',list).className='muted';}
+ }
 function recordsUI(){return recordEntriesUI('records');}
-async function chooseRecordFolder(){if(!window.showDirectoryPicker)throw Error('请在支持选择文件夹的HTTPS网页操作');const h=await window.showDirectoryPicker({mode:'readwrite',startIn:'downloads',id:'bagua-record-folder'});await fileDB('readwrite','records',h);recordDir=h;cfg.recordMode='custom';persist();put('bagua-custom-dir-locked-records',true);toast('已更改并锁定记录位置');}
 const SAVE_DIRS={records:'记录',notes:'随手记',images:'图片',downloads:'下载'};
 function defaultSavePath(kind,name=''){return['八卦搜索',SAVE_DIRS[kind],name].filter(Boolean).join('/');}
-function overrideFor(kind){return kind==='records'?recordDir:kind==='notes'?noteDir:kind==='images'?imageDir:downloadDir;}
-function assignOverride(kind,h){if(kind==='records')recordDir=h;else if(kind==='notes')noteDir=h;else if(kind==='images')imageDir=h;else if(kind==='downloads')downloadDir=h;}
-async function migrateDirectoryFiles(oldDir,newDir){if(!oldDir||!newDir||await oldDir.isSameEntry(newDir))return 0;let copied=0;try{for await(const [name,h] of oldDir.entries()){if(h.kind!=='file')continue;const file=await h.getFile();const target=await newDir.getFileHandle(name,{create:true});const w=await target.createWritable();try{await w.write(file);await w.close();copied++;}catch(e){await w.abort().catch(()=>{});throw e;}}}catch(e){console.warn('[八卦搜索]旧保存位置迁移失败',e);}return copied;}
-async function chooseUnifiedFolder(){if(!window.showDirectoryPicker)throw Error('请在支持选择文件夹的HTTPS网页操作');const root=await window.showDirectoryPicker({mode:'readwrite',startIn:'downloads',id:'bagua-unified-folder'});put('bagua-unified-root-name',root.name||'自定义位置');const bagua=await root.getDirectoryHandle('八卦搜索',{create:true});let copied=0;for(const kind of Object.keys(SAVE_DIRS)){const sub=await bagua.getDirectoryHandle(SAVE_DIRS[kind],{create:true});const old=overrideFor(kind);if(old)try{copied+=await migrateDirectoryFiles(old,sub);}catch{}await fileDB('readwrite',kind,sub);assignOverride(kind,sub);put('bagua-custom-dir-locked-'+kind,true);}if(getBuffer().txn)throw Error('统一文件夹已设置，但存在待保存批次，请先完成或备份');cfg.recordMode='custom';persist();toast('已设置保存位置：八卦搜索'+(copied?`，迁移 ${copied} 个旧文件`:''));}
-
 function cropPicture(source,rect){const c=makeCanvas(rect.width,rect.height),ctx=c.getContext('2d');if(rect.shape==='circle'){ctx.beginPath();ctx.ellipse(c.width/2,c.height/2,c.width/2,c.height/2,0,0,Math.PI*2);ctx.clip();}ctx.drawImage(source,rect.left,rect.top,rect.width,rect.height,0,0,c.width,c.height);return c;}
 async function fitPicture(source,original,type,limit,shrink){
  if(!Number.isFinite(limit)||limit<100)throw Error('请输入有效体积上限');if(original?.type===type&&original.size<=limit)return {blob:original,canvas:source};
@@ -618,10 +610,7 @@ async function fitPicture(source,original,type,limit,shrink){
  }
  throw Error('当前条件下无法达到体积上限'+(shrink?'，请放宽上限或改用其他格式':'；可允许缩小尺寸或明确选择转换格式'));
 }
-async function targetDirectory(kind){const h=overrideFor(kind);if(!h)return null;if(!await permission(h,true))throw Error(SAVE_DIRS[kind]+'位置暂不可用，请在浏览器弹窗中重新授权');return h;}
-function targetDescription(kind){const h=overrideFor(kind);return h?'已选择：'+h.name:'浏览器下载目录／'+defaultSavePath(kind);}
-async function chooseDirectory(kind){if(!SAVE_DIRS[kind])return;if(kind==='records'){await chooseRecordFolder();showSettings('records');return;}if(!window.showDirectoryPicker)throw Error('请在支持选择文件夹的HTTPS网页操作');const h=await window.showDirectoryPicker({mode:'readwrite'});await fileDB('readwrite',kind,h);assignOverride(kind,h);put('bagua-custom-dir-locked-'+kind,true);showSettings('records');}
-async function resetDirectory(kind){if(!SAVE_DIRS[kind])return;if(kind==='records'&&getBuffer().txn)throw Error('请先完成或备份待保存批次，再恢复默认位置');await fileDB('readwrite',kind,null);assignOverride(kind,null);put('bagua-custom-dir-locked-'+kind,false);if(kind==='records'){cfg.recordMode='default';persist();}showSettings('records');}
+async function targetDirectory(kind){return null;}
 function startNativeDownload(url,name){return new Promise((resolve,reject)=>{try{GM_download({url,name,saveAs:false,onload:resolve,onerror:e=>reject(Error(e?.error||'浏览器下载失败，请检查油猴下载权限')),ontimeout:()=>reject(Error('下载超时'))});}catch(e){reject(e);}});}
 async function writeBlobToDirectory(dir,name,blob){const h=await dir.getFileHandle(name,{create:true}),w=await h.createWritable();try{await w.write(blob);await w.close();}catch(e){await w.abort().catch(()=>{});throw e;}}
 const libPromises={};async function library(name,pkg,path){if(libPromises[name])return libPromises[name];libPromises[name]=(async()=>{let last;for(const url of [`https://registry.npmmirror.com/${pkg}/files/${path}`,`https://cdn.jsdelivr.net/npm/${pkg.replace('/','@')}/${path}`])try{const r=await request(url),m={exports:{}};const ret=new Function('module','exports','self','window','globalThis',r.responseText+`\n;return typeof ${name}!=='undefined'?${name}:module.exports;`)(m,m.exports,globalThis,globalThis,globalThis);if(ret&&(typeof ret==='function'||Object.keys(ret).length))return ret;throw Error('依赖未导出');}catch(e){last=e;}throw Error('依赖加载失败：'+name+'；'+last?.message);})();try{return await libPromises[name];}catch(e){delete libPromises[name];throw e;}}
@@ -825,7 +814,7 @@ function reorderCategory(from,to,after=false){const a=cfg.engines.find(e=>e.id==
 
 const CONFIG_KEYS=['box','boxKey','boxSize','boxPosition','boxOrder','super','superKey','normal','foreground','wheelScale','panelScale','engines','textInner','textOuter','linkInner','linkOuter','imageInner','imageOuter','boxTools','language','recordMode','wheelGap'];
 function cleanConfig(input){if(!input||typeof input!=='object'||!Array.isArray(input.engines)||input.engines.length>500)throw Error('设置格式无效');const c=structuredClone(DEFAULT),ids=new Set();const str=(x,max)=>{if(typeof x!=='string'||x.length>max)throw Error('字段格式或长度无效');return x;};
- for(const k of ['box','super','superAuto','normal','foreground','wheelGap'])if(input[k]!==undefined){if(typeof input[k]!=='boolean')throw Error('开关格式无效');c[k]=input[k];}for(const[k,values]of [['boxKey',['auto','ctrl','shift','alt']],['superKey',['ctrl','shift','alt']],['boxSize',['small','medium','large']],['boxPosition',['above','below']],['recordMode',['default','custom']]])if(input[k]!==undefined){if(!values.includes(input[k]))throw Error(k+'选项无效');c[k]=input[k];}
+ for(const k of ['box','super','superAuto','normal','foreground','wheelGap'])if(input[k]!==undefined){if(typeof input[k]!=='boolean')throw Error('开关格式无效');c[k]=input[k];}for(const[k,values]of [['boxKey',['auto','ctrl','shift','alt']],['superKey',['ctrl','shift','alt']],['boxSize',['small','medium','large']],['boxPosition',['above','below']],['recordMode',['default']]])if(input[k]!==undefined){if(!values.includes(input[k]))throw Error(k+'选项无效');c[k]=input[k];}
  if(input.wheelScale!==undefined){if(!Number.isFinite(input.wheelScale)||input.wheelScale<50||input.wheelScale>120)throw Error('缩放值无效');c.wheelScale=input.wheelScale;}if(input.language!==undefined){c.language=str(input.language,12);if(!/^[a-zA-Z-]{2,12}$/.test(c.language))throw Error('语言代码无效');}
  c.engines=input.engines.map(e=>{if(!e||typeof e!=='object')throw Error('网站格式无效');e=migrateEntry(e);const id=str(e.id,100),name=str(e.name,100),url=str(e.url,8000);if(!id||ids.has(id)||!name.trim()||!Object.hasOwn(CATEGORY,e.kind))throw Error('网站ID、名称或分类无效');ids.add(id);let u;try{u=new URL(url);}catch{throw Error('网站网址无效');}if(!/^https?:$/.test(u.protocol)||u.username||u.password)throw Error('仅支持不含凭据的HTTP/HTTPS网址');const mode=e.mode||'url';if(!['url','direct','fill','post','doubao-image','ai-chat'].includes(mode)||mode==='url'&&!url.includes('%s'))throw Error('搜索方式无效');const item={id,name,kind:e.kind,url,mode,enabled:e.enabled!==false,inBox:e.inBox===true,inPanel:e.inPanel===true,inWheel:e.inWheel===true,iconVerified113:e.iconVerified113===true};for(const k of ['icon','autoIcon','capturedIcon'])if(e[k]){const icon=str(e[k],3000000);if(!/^(https?:\/\/|data:image\/(png|jpeg|jpg|webp|gif|svg\+xml)[;,])/i.test(icon))throw Error('图标无效');item[k]=icon;}
  if(e.iconOrigin&&['auto','upload','fallback','saved'].includes(e.iconOrigin))item.iconOrigin=e.iconOrigin; if(mode==='fill'){item.selector=str(e.selector,2000);if(!item.selector)throw Error('缺少选择器');}if(mode==='post'){item.key=str(e.key,200);if(!Array.isArray(e.fields)||e.fields.length>100)throw Error('表单字段无效');item.fields=e.fields.map(p=>{if(!Array.isArray(p)||p.length!==2)throw Error('表单字段无效');return[str(p[0],200),str(p[1],8000)];}).filter(([k])=>!/password|passwd|token|csrf|secret/i.test(k));}return item;});
@@ -843,7 +832,7 @@ function validateBackup(raw){
  for(const id of ['domestic','international']){const c=cleanConfig(normalizeProfile({...v.common,...v.profiles[id]}));next.profiles[id]=pick(c,PROFILE_KEYS);if(!next.common)next.common=pick(c,COMMON_KEYS);}return {state:next,legacy:false};}
  if(raw.version!==undefined&&raw.version!==1)throw Error('不支持的备份版本');const c=cleanConfig(raw.config||raw),next=structuredClone(profileState);next.common=pick(c,COMMON_KEYS);next.profiles[next.active]=pick(c,PROFILE_KEYS);return {state:next,legacy:true};
 }
-function restoreBackup(raw){const parsed=validateBackup(raw);if(!window.confirm((parsed.legacy?'旧版备份将恢复当前版本配置':'将恢复国内版、国际版两套配置')+'及通用设置。\n备份时间：'+String(raw.exportedAt||'未记录')+'\n目录授权和记录不变。是否继续？'))return false;persist();put('before-restore-v3',structuredClone(profileState));const next=parsed.state;next.common.recordMode=cfg.recordMode;commitState(next);cfg=profileConfig(next);freeTranslationSession=null;showSettings('config');toast('已恢复；新环境请重新授权保存目录');return true;}
+function restoreBackup(raw){const parsed=validateBackup(raw);if(!window.confirm((parsed.legacy?'旧版备份将恢复当前版本配置':'将恢复国内版、国际版两套配置')+'及通用设置。\n备份时间：'+String(raw.exportedAt||'未记录')+'\n目录授权和记录不变。是否继续？'))return false;persist();put('before-restore-v3',structuredClone(profileState));const next=parsed.state;next.common.recordMode='default';commitState(next);cfg=profileConfig(next);freeTranslationSession=null;showSettings('config');toast('已恢复；保存位置为浏览器默认下载目录');return true;}
 function importConfig(){const input=el('input',undefined,root);input.type='file';input.accept='.json,application/json';input.hidden=true;input.onchange=()=>safe(async()=>{try{const file=input.files?.[0];if(!file)return;if(file.size>20*1024*1024)throw Error('备份不能超过20MB');restoreBackup(JSON.parse((await file.text()).replace(/^\uFEFF/,'')));}finally{input.remove();}});input.addEventListener('cancel',()=>input.remove(),{once:true});input.click();}
 function resetProfile(id){if(!Object.hasOwn(PROFILE_NAME,id))throw Error('配置类型无效');if(!window.confirm('恢复'+PROFILE_NAME[id]+'默认网站配置？另一版、通用设置、记录和该版自定义网站均保留。'))return;persist();put('before-restore-v3',structuredClone(profileState));const next=structuredClone(profileState),old=next.profiles[id],fresh=initialProfile(id);fresh.engines.push(...old.engines.filter(e=>!BUILTIN_IDS.has(e.id)));for(const k of RING_KEYS)fresh[k]=old[k].map((x,i)=>{if(!x.startsWith('e:'))return x;const def=fresh[k][i];if(def.startsWith('e:'))return def;const kind=old.engines.find(e=>'e:'+e.id===x)?.kind,e=fresh.engines.find(e=>e.kind===kind);return e?'e:'+e.id:'none';});next.profiles[id]=fresh;commitState(next);cfg=profileConfig(next);showSettings('config');toast('已恢复'+PROFILE_NAME[id]+'默认网站配置');}
 function renderConfigTools(content){const card=title=>{const c=el('section',undefined,content);c.className='settings-card';c.style.marginBottom='10px';el('h4',title,c);return c;};const c=card('配置选择'),r=el('div',undefined,c);r.className='row';for(const id of ['domestic','international']){const l=el('label',undefined,r),n=el('input',undefined,l);n.type='radio';n.name='bagua-profile';n.value=id;n.checked=profileState.active===id;l.append(' '+PROFILE_NAME[id]+'配置');n.onchange=()=>safe(()=>switchProfile(id));}const explain=el('p',"国内版：使用国内常用网站。 国际版：加入了国际常用网站。\n两套配置分别自动保存，切换互不影响。\n快捷键、外观、工具位置及保存位置共用。\n自定义网站只在添加时可选择复制到另一版，之后独立保存。",c);explain.className='muted profile-explanation';explain.style.whiteSpace='pre-line';const b=card('本地备份');el('p','包含国内版、国际版两套配置及通用设置。',b);button(b,'导出配置',exportConfig);button(b,'导入配置',importConfig);if(get('before-restore-v3',null))button(b,'导出覆盖前备份',()=>downloadJSON({format:'bagua-search-settings',version:3,scriptVersion:'0.1.19',state:get('before-restore-v3')},'八卦搜索-覆盖前备份.json'));const d=card('恢复默认');button(d,'恢复国内版默认配置',()=>resetProfile('domestic'));button(d,'恢复国际版默认配置',()=>resetProfile('international'));}
@@ -896,26 +885,12 @@ if(tab==='box'){
 
 function renderSaveLocations(content){
  el('h4','保存位置',content);
- const status=el('div',unifiedSaveDescription(),content);status.className='status';
+ const status=el('div','默认：浏览器下载目录 ／ 八卦搜索 ／ {记录、随手记、图片、下载}',content);
+ status.className='status';
  const row=el('div',undefined,content);row.className='row';
- button(row,'更改位置',async()=>{await chooseUnifiedFolder();showSettings('config');});
- button(row,'恢复默认',async()=>{await resetUnifiedFolder();showSettings('config');});
  button(row,'查看记录',recordsUI);
  button(row,'查看随手记',notesUI);
- const saveHint=el('p','在所选位置下自动创建「八卦搜索」文件夹，并生成记录、随手记、图片、下载四个子文件夹。\n未设置时，默认在浏览器下载目录中创建「八卦搜索」结构。',content);saveHint.className='muted';saveHint.style.whiteSpace='pre-line';
 }
-function unifiedSaveDescription(){
- const label=get('bagua-unified-root-name','');
- if(overrideFor('records')||overrideFor('notes')||overrideFor('images')||overrideFor('downloads'))
-  return '已选择：'+(label||'自定义位置')+' ／ 八卦搜索 ／ {记录、随手记、图片、下载}';
- return '默认：浏览器下载目录 ／ 八卦搜索 ／ {记录、随手记、图片、下载}';
-}
-async function resetUnifiedFolder(){
- for(const kind of Object.keys(SAVE_DIRS)){await fileDB('readwrite',kind,null);assignOverride(kind,null);put('bagua-custom-dir-locked-'+kind,false);}put('bagua-unified-root-name','');
- toast('已恢复默认保存位置');
-}
-
-
 if(['general'].includes(tab)){if(tab==='general'){content.classList.add('trigger-layout');for(const n of content.querySelectorAll('p.muted,small.muted'))n.remove();}
  const nodes=[...content.childNodes],grid=el('div',undefined,content);grid.className='settings-columns '+(tab==='engines'?'engine-columns':'');let card=null;
  for(const node of nodes){if(node.tagName==='H4'){card=el('section',undefined,grid);card.className='settings-card';}if(!card){card=el('section',undefined,grid);card.className='settings-card';}card.append(node);}
